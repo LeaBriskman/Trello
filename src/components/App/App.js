@@ -4,10 +4,23 @@ import List from '../List/List';
 import { connect } from 'react-redux';
 import ActionButton from '../ActionButton/ActionButton';
 import { DragDropContext } from 'react-beautiful-dnd';
+import { sort } from '../../actions';
 
 class App extends Component {
-  onDragEnd = () => {
+  onDragEnd = result => {
+    const { destination, source, draggableId } = result;
+    if (!destination) {
+      return;
+    }
 
+    this.props.dispatch(sort(
+      source.droppableId,
+      destination.droppableId,
+      source.index,
+      destination.index,
+      draggableId
+      )
+    );
   }
 
   render() {
