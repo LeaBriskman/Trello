@@ -1,84 +1,94 @@
-import { CONSTANTS } from '../actions';
+import { CONSTANTS } from "../actions";
 
-let listId = 2;
-let cardId = 5;
-
-const initialState = [
-  {
-    title: 'Test title',
-    id: `list-${0}`,
-    cards: [
-      {
-        id: `card-${0}`,
-        text: "some text for example"
-      },
-      {
-        id: `card-${1}`,
-        text: "some text for example for the second card"
-      },
-    ]
-  },
-  {
-    title: 'Test title 2',
-    id: `list-${1}`,
-    cards: [
-      {
-        id: `card-${3}`,
-        text: "some text for example for the second list"
-      },
-      {
-        id: `card-${4}`,
-        text: "some text for example for the second card of the second list"
-      },
-    ]
+const initialState = {
+  "list-0": {
+    id: "list-0",
+    cards: ["card-0"],
+    title: "Example List",
+    board: "board-0"
   }
-];
+};
 
 const listsReducer = (state = initialState, action) => {
   switch (action.type) {
-    case CONSTANTS.ADD_LIST:
+    case CONSTANTS.ADD_LIST: {
+      const { title, id } = action.payload;
       const newList = {
-        title: action.payload,
-        cards: [],
-        id: `list-${listId}`
+        title: title,
+        id: `list-${id}`,
+        cards: []
       };
-      listId += 1;
-      return [...state, newList];
+
+      const newState = { ...state, [`list-${id}`]: newList };
+
+      return newState;
+    }
 
     case CONSTANTS.ADD_CARD: {
-      const newCard = {
-        text: action.payload.text,
-        id: `card-${cardId}`
-      }
-      cardId += 1;
-      const newState = state.map(list => {
-        if (list.id === action.payload.listId) {
-          return {
-            ...list,
-            cards: [...list.cards, newCard]
-          }
-        } else {
-          return list;
-        }
-      });
-      return newState;
+      const { listID, id } = action.payload;
+      const list = state[listID];
+      list.cards.push(`card-${id}`);
+      return { ...state, [listID]: list };
     }
 
     case CONSTANTS.DRAG_HAPPENED:
       const {
         droppableIdStart,
         droppableIdEnd,
-        droppableIndexStart,
         droppableIndexEnd,
-        draggableId
+        droppableIndexStart,
+
+        type
       } = action.payload;
-      const newState = [...state];
+
+      if (type === "list") {
+        return state;
+      }
+
       if (droppableIdStart === droppableIdEnd) {
-        const list = state.find(list => droppableIdStart === list.id);
+        const list = state[droppableIdStart];
         const card = list.cards.splice(droppableIndexStart, 1);
         list.cards.splice(droppableIndexEnd, 0, ...card);
-        return newState;
+        return { ...state, [droppableIdStart]: list };
       }
+
+      if (droppableIdStart !== droppableIdEnd) {
+        const listStart = state[droppableIdStart];
+        const card = listStart.cards.splice(droppableIndexStart, 1);
+        const listEnd = state[droppableIdEnd];
+        listEnd.cards.splice(droppableIndexEnd, 0, ...card);
+        return {
+          ...state,
+          [droppableIdStart]: listStart,
+          [droppableIdEnd]: listEnd
+        };
+      }
+      return state;
+
+    case CONSTANTS.DELETE_CARD: {
+      const { listID, id } = action.payload;
+
+      const list = state[listID];
+      const newCards = list.cards.filter(cardID => cardID !== id);
+
+      return { ...state, [listID]: { ...list, cards: newCards } };
+    }
+
+    case CONSTANTS.EDIT_LIST_TITLE: {
+      const { listID, newTitle } = action.payload;
+
+      const list = state[listID];
+      list.title = newTitle;
+      return { ...state, [listID]: list };
+    }
+
+    case CONSTANTS.DELETE_LIST: {
+      const { listID } = action.payload;
+      const newState = state;
+      delete newState[listID];
+      return newState;
+    }
+
     default:
       return state;
   }
